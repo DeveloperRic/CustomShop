@@ -6,3 +6,6 @@ You may use the source code of CustomShop, but you must also make the source cod
 
 ### License
 CustomShop is rgistred under the GPU License (General Public Lisence)
+
+### Resources
+ * [Plugin Page](https://www.spigotmc.org/resources/custom-shop-gui.28178/)
