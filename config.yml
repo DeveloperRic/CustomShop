@@ -1,0 +1,9 @@
+mute-perm: 'chatmute.mute'
+bypass-perm: 'chatmute.bypass'
+mute-active: false
+mute-message: '&cYou may not speak while a global chat mute is in progress!'
+perm-add-command: 'manuaddp %player% %perm%'
+activate-messages:
+ - ''
+ - '&cA Global Chat Mute has begun! If this lasts loger than specified by a moderator, or if no time is specified, report it on the forums! &2&lGlobal Chat muted by &6&l%player%'
+ - ''

@@ -1,0 +1,7 @@
+main: com.rictacius.chatMute.Main
+version: 0.1.0
+name: ChatMute
+
+commands:
+  chatmute:
+    description: Main command
