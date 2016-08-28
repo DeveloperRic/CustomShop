@@ -1,7 +1,10 @@
-main: com.rictacius.chatMute.Main
-version: 0.1.0
-name: ChatMute
+main: com.rictacius.customShop.Main
+version: 2.1
+name: CustomShop
+depend: [Vault]
 
 commands:
-  chatmute:
+  shop:
     description: Main command
+  sell:
+    description: Sell command
