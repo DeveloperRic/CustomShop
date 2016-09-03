@@ -20,8 +20,11 @@ import net.milkbowl.vault.economy.Economy;
 public class Main extends JavaPlugin implements Listener {
 	PluginDescriptionFile pdfFile = getDescription();
 	Logger logger = getLogger();
+	
+	public static Main pl;
 
 	public void onEnable() {
+		pl = this;
 		Methods.sendColoredMessage(this, ChatColor.AQUA, ("Registering Commands...."), ChatColor.YELLOW);
 		registerCommands();
 		Methods.sendColoredMessage(this, ChatColor.AQUA, ("Registering Events...."), ChatColor.YELLOW);
@@ -58,6 +61,7 @@ public class Main extends JavaPlugin implements Listener {
 			pm.registerEvents(new Shops(this), this);
 			pm.registerEvents(new Sell(this), this);
 			pm.registerEvents(new ServerChecker(), this);
+			pm.registerEvents(new SignSupport(this), this);
 		} catch (Exception e) {
 			Methods.sendColoredMessage(this, ChatColor.AQUA, ("Error while registering events!"), ChatColor.RED);
 			Methods.sendColoredMessage(this, ChatColor.AQUA, ("Trace:"), ChatColor.RED);
