@@ -1,5 +1,5 @@
 main: com.rictacius.customShop.Main
-version: 2.1
+version: 1.4.0
 name: CustomShop
 depend: [Vault]
 

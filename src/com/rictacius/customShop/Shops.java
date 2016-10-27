@@ -28,6 +28,7 @@ import net.minecraft.server.v1_8_R3.NBTTagList;
 public class Shops implements Listener {
 	private static HashMap<String, Inventory> shops = new HashMap<String, Inventory>();
 	protected static Main plugin;
+	public static String version = "1.8";
 
 	public Shops(Main pl) {
 		plugin = pl;
@@ -221,7 +222,6 @@ public class Shops implements Listener {
 					return;
 				}
 				p.getInventory().addItem(ditem);
-				Bukkit.broadcastMessage(ChatColor.AQUA + convertDataToEntityType(iddata).getName() + " Spawner");
 				plugin.economy.withdrawPlayer(p, price);
 			}
 		}
@@ -234,14 +234,16 @@ public class Shops implements Listener {
 			ItemMeta im = item.getItemMeta();
 			if (im != null) {
 				List<String> lore = im.getLore();
-				if (lore.size() == 1) {
-					if (lore.get(0).startsWith(ChatColor.GREEN + "CS Spawner: ")) {
-						Block block = event.getBlockPlaced();
-						CreatureSpawner spawner = (CreatureSpawner) block.getState();
-						String type = lore.get(0).replaceAll(ChatColor.GREEN + "CS Spawner: ", "");
-						@SuppressWarnings("deprecation")
-						EntityType etype = EntityType.fromName(ChatColor.stripColor(type));
-						spawner.setSpawnedType(etype);
+				if (lore != null) {
+					if (lore.size() == 1) {
+						if (lore.get(0).startsWith(ChatColor.GREEN + "CS Spawner: ")) {
+							Block block = event.getBlockPlaced();
+							CreatureSpawner spawner = (CreatureSpawner) block.getState();
+							String type = lore.get(0).replaceAll(ChatColor.GREEN + "CS Spawner: ", "");
+							@SuppressWarnings("deprecation")
+							EntityType etype = EntityType.fromName(ChatColor.stripColor(type));
+							spawner.setSpawnedType(etype);
+						}
 					}
 				}
 			}

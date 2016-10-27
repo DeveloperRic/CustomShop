@@ -20,18 +20,37 @@ import net.milkbowl.vault.economy.Economy;
 public class Main extends JavaPlugin implements Listener {
 	PluginDescriptionFile pdfFile = getDescription();
 	Logger logger = getLogger();
-	
+
 	public static Main pl;
 
 	public void onEnable() {
 		pl = this;
+		Methods.sendColoredMessage(this, ChatColor.AQUA, ("Registering Config...."), ChatColor.YELLOW);
+		createFiles();
+		setupEconomy();
+		Methods.sendColoredMessage(this, ChatColor.AQUA, ("Checking for updates...."), ChatColor.YELLOW);
+		boolean update = Updater.check();
+		if (update) {
+			Methods.sendColoredMessage(this, ChatColor.AQUA, ("Found update (v" + Updater.newVersion + ")."),
+					ChatColor.GREEN);
+			if (config.getString("auto-update") == null) {
+				config.set("auto-update", true);
+				saveConfig();
+			}
+			if (Boolean.parseBoolean(config.getString("auto-update"))) {
+				Methods.sendColoredMessage(this, ChatColor.AQUA, ("Auto-updating CustomShop..."), ChatColor.YELLOW);
+				Updater.update();
+				Methods.sendColoredMessage(this, ChatColor.AQUA,
+						("Downloaded update (v" + Updater.newVersion + ") Please restart your server to install it!"),
+						ChatColor.GREEN);
+			}
+		} else {
+			Methods.sendColoredMessage(this, ChatColor.AQUA, ("CustomShop is up to date."), ChatColor.GREEN);
+		}
 		Methods.sendColoredMessage(this, ChatColor.AQUA, ("Registering Commands...."), ChatColor.YELLOW);
 		registerCommands();
 		Methods.sendColoredMessage(this, ChatColor.AQUA, ("Registering Events...."), ChatColor.YELLOW);
 		registerEvents();
-		Methods.sendColoredMessage(this, ChatColor.AQUA, ("Registering Config...."), ChatColor.YELLOW);
-		createFiles();
-		setupEconomy();
 		Methods.sendColoredMessage(this, ChatColor.AQUA,
 				(pdfFile.getName() + " has been enabled! (V." + pdfFile.getVersion() + ")"), ChatColor.GREEN);
 	}

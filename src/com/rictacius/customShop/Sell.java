@@ -14,6 +14,7 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
 import net.md_5.bungee.api.ChatColor;
+import net.md_5.bungee.api.chat.TextComponent;
 
 public class Sell implements CommandExecutor, Listener {
 	protected static Main plugin;
@@ -82,7 +83,7 @@ public class Sell implements CommandExecutor, Listener {
 			}
 		}
 		if (sold < size) {
-			p.sendMessage(ChatColor.RED + "Some items were not sold");
+			p.sendMessage(new TextComponent(ChatColor.RED + "Some items were not sold").getText());
 			for (int n = 0; n < errorInv.getSize(); n++) {
 				ItemStack i = errorInv.getItem(n);
 				if (i == null) {
@@ -91,18 +92,18 @@ public class Sell implements CommandExecutor, Listener {
 				p.getInventory().addItem(i);
 			}
 		} else {
-			p.sendMessage(ChatColor.GREEN + "" + items + " items sold for " + plugin.getConfig().getString("currency")
-					+ sent);
+			p.sendMessage(new TextComponent(ChatColor.GREEN + "" + items + " items sold for " + plugin.getConfig().getString("currency")
+					+ sent).getText());
 		}
 	}
 
 	public boolean onCommand(CommandSender sender, Command command, String string, String[] args) {
 		if (!(sender instanceof Player)) {
-			sender.sendMessage(ChatColor.RED + "Command only useable by players!");
+			sender.sendMessage(new TextComponent(ChatColor.RED + "Command only useable by players!").getText());
 			return true;
 		}
 		if (!sender.hasPermission(plugin.getConfig().getString("shop-perm"))) {
-			sender.sendMessage(ChatColor.RED + "You Shall not pass!");
+			sender.sendMessage(new TextComponent(ChatColor.RED + "You Shall not pass!").getText());
 			return true;
 		}
 		Player p = (Player) sender;

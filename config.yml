@@ -1,3 +1,4 @@
 currency: '$'
 shop-perm: customshop.use
 admin-perm: customshop.admin
+auto-update: true

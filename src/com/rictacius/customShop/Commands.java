@@ -8,6 +8,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 
 import net.md_5.bungee.api.ChatColor;
+import net.md_5.bungee.api.chat.TextComponent;
 
 public class Commands implements CommandExecutor {
 	private Main plugin;
@@ -18,11 +19,11 @@ public class Commands implements CommandExecutor {
 
 	public boolean onCommand(CommandSender sender, Command command, String arg2, String[] args) {
 		if (!(sender instanceof Player)) {
-			sender.sendMessage(ChatColor.RED + "Command only useable by players!");
+			sender.sendMessage(new TextComponent(ChatColor.RED + "Command only useable by players!").getText());
 			return true;
 		}
 		if (!(PermCheck.senderHasAccess(sender, plugin.getConfig().getString("shop-perm")))) {
-			sender.sendMessage(ChatColor.RED + "You Shall not pass!");
+			sender.sendMessage(new TextComponent(ChatColor.RED + "You Shall not pass!").getText());
 			return true;
 		}
 		Player p = (Player) sender;
@@ -40,18 +41,18 @@ public class Commands implements CommandExecutor {
 			p.sendMessage("");
 		} else if (args[0].equalsIgnoreCase("reload")) {
 			if (!PermCheck.senderHasAccess(sender, plugin.getConfig().getString("admin-perm"))) {
-				sender.sendMessage(ChatColor.RED + "You Shall not pass!");
+				sender.sendMessage(new TextComponent(ChatColor.RED + "You Shall not pass!").getText());
 				return true;
 			}
 			try {
 				plugin.reloadAllConfigFiles();
 				Shops.loadShops();
-				
+
 			} catch (Exception e) {
-				p.sendMessage(ChatColor.RED + "Error reloading config please check config for more information");
+				p.sendMessage(new TextComponent(ChatColor.RED + "Error reloading config please check config for more information").getText());
 				return true;
 			}
-			p.sendMessage(ChatColor.GREEN + "Plugin reloaded!");
+			p.sendMessage(new TextComponent(ChatColor.GREEN + "Plugin reloaded!").getText());
 			p.sendMessage(ChatColor.GRAY + "Plugin built by RictAcius");
 		} else if (args[0].equalsIgnoreCase("sell")) {
 			Inventory inv = Bukkit.createInventory(null, 36, ChatColor.RED + "CSell");
