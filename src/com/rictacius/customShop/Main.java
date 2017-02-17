@@ -4,12 +4,10 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.logging.Logger;
 
-import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.event.Listener;
-import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.RegisteredServiceProvider;
@@ -22,12 +20,19 @@ public class Main extends JavaPlugin implements Listener {
 	Logger logger = getLogger();
 
 	public static Main pl;
+	public static String cur;
 
 	public void onEnable() {
 		pl = this;
 		Methods.sendColoredMessage(this, ChatColor.AQUA, ("Registering Config...."), ChatColor.YELLOW);
 		createFiles();
+		cur = getConfig().getString("currency");
 		setupEconomy();
+		Methods.sendColoredMessage(this, ChatColor.AQUA, ("Registering Commands...."), ChatColor.YELLOW);
+		registerCommands();
+		Methods.sendColoredMessage(this, ChatColor.AQUA, ("Registering Events...."), ChatColor.YELLOW);
+		registerEvents();
+		ChestShops.loadShops();
 		Methods.sendColoredMessage(this, ChatColor.AQUA, ("Checking for updates...."), ChatColor.YELLOW);
 		boolean update = Updater.check();
 		if (update) {
@@ -39,7 +44,7 @@ public class Main extends JavaPlugin implements Listener {
 			}
 			if (Boolean.parseBoolean(config.getString("auto-update"))) {
 				Methods.sendColoredMessage(this, ChatColor.AQUA, ("Auto-updating CustomShop..."), ChatColor.YELLOW);
-				Updater.update();
+				Updater.download();
 				Methods.sendColoredMessage(this, ChatColor.AQUA,
 						("Downloaded update (v" + Updater.newVersion + ") Please restart your server to install it!"),
 						ChatColor.GREEN);
@@ -47,16 +52,13 @@ public class Main extends JavaPlugin implements Listener {
 		} else {
 			Methods.sendColoredMessage(this, ChatColor.AQUA, ("CustomShop is up to date."), ChatColor.GREEN);
 		}
-		Methods.sendColoredMessage(this, ChatColor.AQUA, ("Registering Commands...."), ChatColor.YELLOW);
-		registerCommands();
-		Methods.sendColoredMessage(this, ChatColor.AQUA, ("Registering Events...."), ChatColor.YELLOW);
-		registerEvents();
 		Methods.sendColoredMessage(this, ChatColor.AQUA,
 				(pdfFile.getName() + " has been enabled! (V." + pdfFile.getVersion() + ")"), ChatColor.GREEN);
 	}
 
 	public void onDisable() {
-
+		ChestShops.saveShops();
+		ChestShops.shutdownShops();
 		Methods.sendColoredMessage(this, ChatColor.AQUA,
 				(pdfFile.getName() + " has been disabled! (V." + pdfFile.getVersion() + ")"), ChatColor.YELLOW);
 	}
@@ -77,10 +79,10 @@ public class Main extends JavaPlugin implements Listener {
 		try {
 			PluginManager pm = getServer().getPluginManager();
 
-			pm.registerEvents(new Shops(this), this);
+			pm.registerEvents(new Shops(), this);
 			pm.registerEvents(new Sell(this), this);
 			pm.registerEvents(new ServerChecker(), this);
-			pm.registerEvents(new SignSupport(this), this);
+			pm.registerEvents(new ChestShops(), this);
 		} catch (Exception e) {
 			Methods.sendColoredMessage(this, ChatColor.AQUA, ("Error while registering events!"), ChatColor.RED);
 			Methods.sendColoredMessage(this, ChatColor.AQUA, ("Trace:"), ChatColor.RED);
@@ -102,11 +104,7 @@ public class Main extends JavaPlugin implements Listener {
 		Methods.sendColoredMessage(this, ChatColor.AQUA, ("Config successfuly registered!"), ChatColor.LIGHT_PURPLE);
 	}
 
-	public static Plugin getPlugin() {
-		return Bukkit.getServer().getPluginManager().getPlugin("Exteria_Utilities");
-	}
-
-	public Economy economy = null;
+	public static Economy economy = null;
 
 	private boolean setupEconomy() {
 		RegisteredServiceProvider<Economy> economyProvider = getServer().getServicesManager()
@@ -120,10 +118,15 @@ public class Main extends JavaPlugin implements Listener {
 
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	private File configf, shopsf;
-	private FileConfiguration config, shops;
+	public static FileConfiguration config, shops;
 
 	public FileConfiguration getShopsConfig() {
-		return this.shops;
+		return shops;
+	}
+
+	@Override
+	public FileConfiguration getConfig() {
+		return config;
 	}
 
 	public int reloadAllConfigFiles() {
@@ -150,6 +153,7 @@ public class Main extends JavaPlugin implements Listener {
 			file = "Shops Config File";
 			errorFiles.add(file);
 		}
+		cur = getConfig().getString("currency");
 		if (errors > 0) {
 			Methods.sendColoredMessage(this, ChatColor.GOLD, ("Could not reload all config files!"), ChatColor.RED);
 			Methods.sendColoredMessage(this, ChatColor.GOLD, ("The following files generated erros:"), ChatColor.RED);
@@ -216,6 +220,11 @@ public class Main extends JavaPlugin implements Listener {
 						ChatColor.RED);
 				e.printStackTrace();
 			}
+			config.addDefault("currency", '$');
+			config.addDefault("shop-perm", "customshop.use");
+			config.addDefault("admin-perm", "customshop.admin");
+			config.addDefault("chestshop-perm", "customshop.chestshop");
+			config.addDefault("auto-update", true);
 		} catch (Exception e) {
 			Methods.sendColoredMessage(this, ChatColor.LIGHT_PURPLE, ("Error while registering config!"),
 					ChatColor.RED);

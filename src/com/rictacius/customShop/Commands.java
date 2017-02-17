@@ -33,11 +33,14 @@ public class Commands implements CommandExecutor {
 		}
 		if (args[0].equalsIgnoreCase("help")) {
 			p.sendMessage("");
-			p.sendMessage(ChatColor.BLUE + "Custom Shop v" + plugin.getDescription().getVersion());
+			Updater.check();
+			String update = Updater.newVersion == null ? "" : ChatColor.GREEN + " Update availabe!";
+			p.sendMessage(ChatColor.BLUE + "Custom Shop v" + plugin.getDescription().getVersion() + update);
 			p.sendMessage(ChatColor.YELLOW + "/shop");
 			p.sendMessage(ChatColor.YELLOW + "/shop help");
 			p.sendMessage(ChatColor.YELLOW + "/shop reload");
 			p.sendMessage(ChatColor.YELLOW + "/shop sell");
+			p.sendMessage(ChatColor.YELLOW + "/shop update");
 			p.sendMessage("");
 		} else if (args[0].equalsIgnoreCase("reload")) {
 			if (!PermCheck.senderHasAccess(sender, plugin.getConfig().getString("admin-perm"))) {
@@ -45,11 +48,12 @@ public class Commands implements CommandExecutor {
 				return true;
 			}
 			try {
+				plugin.saveConfig();
 				plugin.reloadAllConfigFiles();
 				Shops.loadShops();
-
 			} catch (Exception e) {
-				p.sendMessage(new TextComponent(ChatColor.RED + "Error reloading config please check config for more information").getText());
+				p.sendMessage(new TextComponent(
+						ChatColor.RED + "Error reloading config please check config for more information").getText());
 				return true;
 			}
 			p.sendMessage(new TextComponent(ChatColor.GREEN + "Plugin reloaded!").getText());
@@ -57,6 +61,25 @@ public class Commands implements CommandExecutor {
 		} else if (args[0].equalsIgnoreCase("sell")) {
 			Inventory inv = Bukkit.createInventory(null, 36, ChatColor.RED + "CSell");
 			p.openInventory(inv);
+		} else if (args[0].equalsIgnoreCase("update")) {
+			p.sendMessage("");
+			p.sendMessage("");
+			p.sendMessage(ChatColor.GRAY + "Checking for Updates...");
+			boolean check = Updater.check();
+			if (check) {
+				p.sendMessage(ChatColor.GREEN + "Updates Available -> " + ChatColor.GOLD + "v" + Updater.newVersion);
+				p.sendMessage(ChatColor.GRAY + "Downloading Updates...");
+				boolean downloaded = Updater.download();
+				if (downloaded) {
+					p.sendMessage(
+							ChatColor.GREEN + "Downloaded Updates -> " + ChatColor.GOLD + "v" + Updater.newVersion);
+					p.sendMessage(ChatColor.RED + "Restart your server now to install them.");
+				} else {
+					p.sendMessage(ChatColor.DARK_RED + "Could not download updates! Check console.");
+				}
+			} else {
+				p.sendMessage(ChatColor.GREEN + "CustomShop is up to date");
+			}
 		}
 		return true;
 	}

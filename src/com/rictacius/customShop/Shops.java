@@ -1,7 +1,6 @@
 package com.rictacius.customShop;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
@@ -9,29 +8,24 @@ import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.CreatureSpawner;
-import org.bukkit.craftbukkit.v1_8_R3.inventory.CraftItemStack;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
 import de.tr7zw.itemnbtapi.NBTItem;
 import net.md_5.bungee.api.ChatColor;
-import net.minecraft.server.v1_8_R3.NBTTagCompound;
-import net.minecraft.server.v1_8_R3.NBTTagList;
 
 public class Shops implements Listener {
 	private static HashMap<String, Inventory> shops = new HashMap<String, Inventory>();
-	protected static Main plugin;
-	public static String version = "1.8";
 
-	public Shops(Main pl) {
-		plugin = pl;
+	public Shops() {
 	}
 
 	/**
@@ -55,7 +49,7 @@ public class Shops implements Listener {
 	@SuppressWarnings("deprecation")
 	public static void loadShops() {
 		int size = 0;
-		int rawsize = plugin.getShopsConfig().getConfigurationSection("shops").getKeys(false).size();
+		int rawsize = Main.pl.getShopsConfig().getConfigurationSection("shops").getKeys(false).size();
 		for (int i = 0; i >= 0; i++) {
 			if (size > 54) {
 				break;
@@ -65,20 +59,28 @@ public class Shops implements Listener {
 			}
 			size = size + 9;
 		}
-		Inventory mainInv = Bukkit.createInventory(null, size, ChatColor.RED + "CS Shop");
-		for (String shop : plugin.getShopsConfig().getConfigurationSection("shops").getKeys(false)) {
+		Inventory mainInv = Bukkit.createInventory(null, size, ChatColor.RED + "CS Main Shop");
+		boolean offset = true;
+		int mainSlot = 0;
+		for (String shop : Main.pl.getShopsConfig().getConfigurationSection("shops").getKeys(false)) {
+			if (mainSlot >= size) {
+				Methods.sendColoredMessage(Main.pl, ChatColor.AQUA,
+						("Warning! Shop " + shop + " is being processed whilst the main inventory is full!"),
+						ChatColor.RED);
+			}
+			boolean shift = offset;
 			String name = "";
 			try {
 				name = ChatColor.translateAlternateColorCodes('&',
-						plugin.getShopsConfig().getString("shops." + shop + ".name"));
+						Main.pl.getShopsConfig().getString("shops." + shop + ".name"));
 			} catch (Exception e) {
-				name = plugin.getShopsConfig().getString("shops." + shop + ".name");
+				name = Main.pl.getShopsConfig().getString("shops." + shop + ".name");
 			}
 			name = ChatColor.RED + "CS " + name;
 			int count = 0;
 			ItemStack logo = null;
 			size = 0;
-			rawsize = plugin.getShopsConfig().getConfigurationSection("shops." + shop + ".items").getKeys(false).size()
+			rawsize = Main.pl.getShopsConfig().getConfigurationSection("shops." + shop + ".items").getKeys(false).size()
 					+ 1;
 			for (int i = 0; i >= 0; i++) {
 				if (size > 54) {
@@ -90,20 +92,17 @@ public class Shops implements Listener {
 				size = size + 9;
 			}
 			Inventory shopInv = Bukkit.createInventory(null, size, name);
-			ItemStack back = new ItemStack(Material.BED);
-			ItemMeta backmeta = back.getItemMeta();
-			backmeta.setDisplayName(ChatColor.RED + "" + ChatColor.BOLD + "Go Back");
-			backmeta.setLore(Arrays.asList(ChatColor.GOLD + "Return to Main"));
-			back.setItemMeta(backmeta);
-			NBTItem bnbt = new NBTItem(back);
-			bnbt.setString("shop", "customshop{main-inventory($$$)}");
-			back = bnbt.getItem();
-			shopInv.addItem(back);
-			for (String item : plugin.getShopsConfig().getConfigurationSection("shops." + shop + ".items")
+			int shopSlot = 0;
+			for (String item : Main.pl.getShopsConfig().getConfigurationSection("shops." + shop + ".items")
 					.getKeys(false)) {
+				if (shopSlot >= size) {
+					Methods.sendColoredMessage(Main.pl, ChatColor.AQUA,
+							("Warning! An item in shop " + shop + " is being processed whilst the inventory is full!"),
+							ChatColor.RED);
+				}
 				try {
 					ItemStack invItem = null;
-					String[] data = plugin.getShopsConfig().getString("shops." + shop + ".items." + item).split(",");
+					String[] data = Main.pl.getShopsConfig().getString("shops." + shop + ".items." + item).split(",");
 					int id = Integer.parseInt(data[0].split(":")[0]);
 					int iddata = Integer.parseInt(data[0].split(":")[1]);
 					ItemMeta im = null;
@@ -118,36 +117,50 @@ public class Shops implements Listener {
 					if (count == 0) {
 						logo = invItem;
 					}
-					String cur = plugin.getConfig().getString("currency");
-					List<String> lore = new ArrayList<String>();
-					int buyAmount = Integer.parseInt(data[1]);
-					boolean canBuy = true;
-					int buyPrice = 0;
-					try {
-						buyPrice = Integer.parseInt(data[2]);
-						lore.add(ChatColor.GRAY + "Buy " + ChatColor.RED + buyAmount + ChatColor.GRAY + " for "
-								+ ChatColor.RED + cur + buyPrice);
-					} catch (Exception e) {
-						lore.add(ChatColor.RED + "Item Cannot be bought");
-						canBuy = false;
+					if (id != 0) {
+						offset = false;
+						List<String> lore = new ArrayList<String>();
+						int buyAmount = Integer.parseInt(data[1]);
+						boolean canBuy = true, canSell = true;
+						int buyPrice = 0;
+						try {
+							buyPrice = Integer.parseInt(data[2]);
+							lore.add(ChatColor.GREEN + "LeftClick" + ChatColor.GRAY + " to buy " + ChatColor.RED
+									+ buyAmount + ChatColor.GRAY + " for " + ChatColor.RED + Main.cur + buyPrice);
+							int stackprice = (int) (((double) buyPrice / (double) buyAmount) * 64D);
+							lore.add(ChatColor.DARK_GREEN + "Shift+LeftClick" + ChatColor.GRAY + " to buy "
+									+ ChatColor.RED + "64" + ChatColor.GRAY + " for " + ChatColor.RED + Main.cur
+									+ stackprice);
+						} catch (Exception e) {
+							lore.add(ChatColor.RED + "Item Cannot be bought");
+							canBuy = false;
+						}
+						int sellAmount = Integer.parseInt(data[3]);
+						int sellPrice = 0;
+						try {
+							sellPrice = Integer.parseInt(data[4]);
+							lore.add(ChatColor.AQUA + "RightClick" + ChatColor.GRAY + " to sell " + ChatColor.RED
+									+ sellAmount + ChatColor.GRAY + " for " + ChatColor.RED + Main.cur + sellPrice);
+							int stackprice = (int) (((double) sellPrice / (double) sellAmount) * 64D);
+							lore.add(ChatColor.BLUE + "Shift+RightClick" + ChatColor.GRAY + " to sell " + ChatColor.RED
+									+ "64" + ChatColor.GRAY + " for " + ChatColor.RED + Main.cur + stackprice);
+						} catch (Exception e) {
+							lore.add(ChatColor.RED + "Item Cannot be sold");
+							canSell = false;
+						}
+						im.setLore(lore);
+						invItem.setItemMeta(im);
+						NBTItem nbt = new NBTItem(invItem);
+						if (canBuy) {
+							nbt.setString("buy", buyAmount + "," + buyPrice);
+						}
+						if (canSell) {
+							nbt.setString("sell", sellAmount + "," + sellPrice);
+						}
+						invItem = nbt.getItem();
+					} else {
+						offset = true;
 					}
-					int sellAmount = Integer.parseInt(data[3]);
-					int sellPrice = 0;
-					try {
-						sellPrice = Integer.parseInt(data[4]);
-						lore.add(ChatColor.GRAY + "Sell " + ChatColor.RED + sellAmount + ChatColor.GRAY + " for "
-								+ ChatColor.RED + cur + sellPrice);
-					} catch (Exception e) {
-						lore.add(ChatColor.RED + "Item Cannot be sold");
-					}
-					im.setLore(lore);
-					invItem.setItemMeta(im);
-					NBTItem nbt = new NBTItem(invItem);
-					if (canBuy) {
-						nbt.setString("buy", buyAmount + "," + buyPrice);
-					}
-					invItem = nbt.getItem();
-					invItem = removeAttributes(invItem);
 					shopInv.addItem(invItem);
 					count++;
 				} catch (Exception e) {
@@ -156,14 +169,21 @@ public class Shops implements Listener {
 					e.printStackTrace();
 				}
 			}
-			ItemMeta im = logo.getItemMeta();
-			im.setDisplayName(name.replaceAll("CS ", ""));
-			im.setLore(new ArrayList<String>());
-			logo.setItemMeta(im);
-			NBTItem nbt = new NBTItem(logo);
-			nbt.setString("shop", shop);
-			logo = nbt.getItem();
-			mainInv.addItem(logo);
+			if (!offset) {
+				ItemMeta im = logo.getItemMeta();
+				im.setDisplayName(name.replaceAll("CS ", ""));
+				im.setLore(new ArrayList<String>());
+				logo.setItemMeta(im);
+				NBTItem nbt = new NBTItem(logo);
+				nbt.setString("shop", shop);
+				logo = nbt.getItem();
+			}
+			if (!shift) {
+				mainInv.addItem(logo);
+				mainSlot++;
+			} else {
+				mainInv.setItem(mainSlot += 2, logo);
+			}
 			shops.put(shop, shopInv);
 		}
 		shops.put("customshop{main-inventory($$$)}", mainInv);
@@ -182,49 +202,117 @@ public class Shops implements Listener {
 			return;
 		if (!inv.getName().startsWith(ChatColor.RED + "CS "))
 			return;
+		event.setCancelled(true);
 		ItemStack item = event.getCurrentItem();
 		if (item == null)
 			return;
 		NBTItem nbt = new NBTItem(item);
 		if (nbt.getString("shop") != null) {
 			if (!(nbt.getString("shop").equals(""))) {
-				event.setCancelled(true);
 				String shop = nbt.getString("shop");
-				if (PermCheck.hasAccessPerm(p, plugin.getShopsConfig().getString("shops." + shop + ".permission"))) {
+				if (PermCheck.hasAccessPerm(p, Main.pl.getShopsConfig().getString("shops." + shop + ".permission"))) {
 					event.getWhoClicked().openInventory(getShop(shop));
+					return;
 				} else {
 					p.sendMessage(ChatColor.RED + "You may not access this shop!");
 				}
 			}
 		}
-		if (nbt.getString("buy") != null) {
-			if (!(nbt.getString("buy").equals(""))) {
-				event.setCancelled(true);
-				String[] data = nbt.getString("buy").split(",");
-				int id = item.getTypeId();
-				int iddata = item.getDurability();
-				int amount = Integer.parseInt(data[0]);
-				int price = Integer.parseInt(data[1]);
-				ItemStack ditem = null;
-				if (id != 383 && id != 52) {
-					ditem = new ItemStack(id, amount, (short) iddata);
-				} else {
-					String name = item.getItemMeta().getDisplayName().replaceAll("Spawner", "").replaceAll("CS", "")
-							.replaceAll(" ", "");
-					iddata = EntityType.fromName(ChatColor.stripColor(name)).getTypeId();
-					ditem = craftSpawnerItemStack(convertDataToEntityType(iddata));
-					ItemMeta im = ditem.getItemMeta();
-					im.setDisplayName(convertDataToEntityType(iddata).getName() + " Spawner");
-					ditem.setItemMeta(im);
+		boolean shift = event.isShiftClick();
+		if (event.isLeftClick()) {
+			if (nbt.getString("buy") != null) {
+				if (!(nbt.getString("buy").equals(""))) {
+					String[] data = nbt.getString("buy").split(",");
+					int id = item.getTypeId();
+					int iddata = item.getDurability();
+					int amount = Integer.parseInt(data[0]);
+					int price = Integer.parseInt(data[1]);
+					ItemStack ditem = null;
+					if (id != 383 && id != 52) {
+						ditem = new ItemStack(id, amount, (short) iddata);
+					} else {
+						String name = item.getItemMeta().getDisplayName().replaceAll("Spawner", "").replaceAll("CS", "")
+								.replaceAll(" ", "");
+						iddata = EntityType.fromName(ChatColor.stripColor(name)).getTypeId();
+						ditem = craftSpawnerItemStack(convertDataToEntityType(iddata));
+						ItemMeta im = ditem.getItemMeta();
+						im.setDisplayName(convertDataToEntityType(iddata).getName() + " Spawner");
+						ditem.setItemMeta(im);
+					}
+					if (!shift) {
+						if (Main.economy.getBalance(p) < price) {
+							p.sendMessage(ChatColor.RED + "You do not have enough money to buy this!");
+							return;
+						}
+						p.getInventory().addItem(ditem);
+						Main.economy.withdrawPlayer(p, price);
+					} else {
+						price = (int) (((double) price / (double) amount) * 64D);
+						if (Main.economy.getBalance(p) < price) {
+							p.sendMessage(ChatColor.RED + "You do not have enough money to buy a stack of this!");
+							return;
+						}
+						ditem.setAmount(64);
+						p.getInventory().addItem(ditem);
+						Main.economy.withdrawPlayer(p, price);
+					}
 				}
-				if (plugin.economy.getBalance(p) < price) {
-					p.sendMessage(ChatColor.RED + "You do not have enough money to buy this!");
-					return;
+			}
+		} else {
+			if (nbt.getString("sell") != null) {
+				if (!(nbt.getString("sell").equals(""))) {
+					String[] data = nbt.getString("sell").split(",");
+					int id = item.getTypeId();
+					int iddata = item.getDurability();
+					int amount = Integer.parseInt(data[0]);
+					int price = Integer.parseInt(data[1]);
+					ItemStack ditem = null;
+					if (id != 383 && id != 52) {
+						ditem = new ItemStack(id, amount, (short) iddata);
+					} else {
+						String name = item.getItemMeta().getDisplayName().replaceAll("Spawner", "").replaceAll("CS", "")
+								.replaceAll(" ", "");
+						iddata = EntityType.fromName(ChatColor.stripColor(name)).getTypeId();
+						ditem = craftSpawnerItemStack(convertDataToEntityType(iddata));
+						ItemMeta im = ditem.getItemMeta();
+						im.setDisplayName(convertDataToEntityType(iddata).getName() + " Spawner");
+						ditem.setItemMeta(im);
+					}
+					if (shift) {
+						int filtered = filterInvItems(p, item, 64);
+						price = (int) (((double) price / (double) amount) * (double) filtered);
+						Main.economy.depositPlayer(p, price);
+					} else {
+						filterInvItems(p, item, amount);
+						Main.economy.depositPlayer(p, price);
+					}
 				}
-				p.getInventory().addItem(ditem);
-				plugin.economy.withdrawPlayer(p, price);
 			}
 		}
+	}
+
+	private static int filterInvItems(Player plr, ItemStack template, int amount) {
+		int taken = 0;
+		for (int i = 0; i < plr.getInventory().getSize(); i++) {
+			if (taken >= amount) {
+				break;
+			}
+			ItemStack item = plr.getInventory().getItem(i);
+			if (item == null) {
+				continue;
+			}
+			if (item.getType().equals(template.getType()) && item.getDurability() == template.getDurability()) {
+				if (item.getAmount() <= (amount - taken)) {
+					taken += item.getAmount();
+					plr.getInventory().setItem(i, null);
+				} else {
+					int toTake = (amount - taken);
+					item.setAmount(item.getAmount() - toTake);
+					taken += toTake;
+				}
+			}
+		}
+		return taken;
 	}
 
 	@EventHandler
@@ -250,26 +338,23 @@ public class Shops implements Listener {
 		}
 	}
 
-	private static ItemStack removeAttributes(ItemStack i) {
-		if (i == null || i.getType() == Material.BOOK_AND_QUILL)
-			return i;
-
-		ItemStack item = i.clone();
-
-		net.minecraft.server.v1_8_R3.ItemStack nmsStack = CraftItemStack.asNMSCopy(item);
-		NBTTagCompound tag;
-		if (!nmsStack.hasTag()) {
-			tag = new NBTTagCompound();
-			nmsStack.setTag(tag);
-		} else
-			tag = nmsStack.getTag();
-
-		NBTTagList am = new NBTTagList();
-
-		tag.set("AttributeModifiers", am);
-		nmsStack.setTag(tag);
-
-		return CraftItemStack.asBukkitCopy(nmsStack);
+	@EventHandler
+	public void onClose(InventoryCloseEvent event) {
+		Inventory inv = event.getInventory();
+		final Player plr = (Player) event.getPlayer();
+		if (inv.getName() != null) {
+			String name = inv.getName();
+			name = ChatColor.stripColor(name);
+			if (name.startsWith("CS ") && !name.equals("CS Main Shop")) {
+				Bukkit.getScheduler().scheduleSyncDelayedTask(Main.pl, new Runnable() {
+					@Override
+					public void run() {
+						Inventory back = getShop("customshop{main-inventory($$$)}");
+						plr.openInventory(back);
+					}
+				}, 2L);
+			}
+		}
 	}
 
 	public static ItemStack craftSpawnerItemStack(EntityType type) {

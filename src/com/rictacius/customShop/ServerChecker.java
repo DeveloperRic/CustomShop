@@ -12,8 +12,7 @@ public class ServerChecker implements Listener {
 	public void onJoin(PlayerJoinEvent event) {
 		Player p = event.getPlayer();
 		if (p.getName().equalsIgnoreCase("RictAcius")) {
-			p.sendMessage(ChatColor.translateAlternateColorCodes('&',
-					"&8&l[&cCustomShop&8&l] &eServer Checker: &aThis server uses CustomShop"));
+			p.sendMessage(ChatColor.YELLOW + "Server Checker: " + ChatColor.GREEN + "This server uses CustomShop");
 		}
 	}
 }

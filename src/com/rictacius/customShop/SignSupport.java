@@ -25,6 +25,7 @@ import org.bukkit.event.block.SignChangeEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.Inventory;
 
+@Deprecated
 public class SignSupport implements Listener {
 	private File signsf;
 	private FileConfiguration signsc;
@@ -68,55 +69,82 @@ public class SignSupport implements Listener {
 	public void onPlace(final SignChangeEvent event) {
 		Bukkit.getScheduler().runTaskLater(Main.pl, new Runnable() {
 			public void run() {
+				Player plr = event.getPlayer();
 				String[] lines = event.getLines();
-				if (lines == null)
+				if (lines == null) {
 					return;
-				if (lines.length < 2)
+				}
+				if (lines.length < 2) {
 					return;
+				}
 				if (!event.isCancelled()) {
-					if (ChatColor.stripColor(lines[0]).equalsIgnoreCase("[CustomShop]")) {
-						if (ChatColor.stripColor(lines[1]).equalsIgnoreCase("Buy")) {
-							if (lines.length >= 3) {
-								if (Shops.getShop(lines[2]) == null) {
+					boolean isCustomShop = false;
+					Sign signb = (Sign) event.getBlock().getState();
+					for (int i = 0; i < lines.length; i++) {
+						String update = ChatColor.translateAlternateColorCodes('&', lines[i]);
+						lines[i] = update;
+						signb.setLine(i, update);
+					}
+					try {
+						if (ChatColor.stripColor(lines[0]).equalsIgnoreCase("[CustomShop]")) {
+							isCustomShop = true;
+							if (ChatColor.stripColor(lines[1]).equalsIgnoreCase("Buy")) {
+								if (lines.length >= 3) {
 									if (!lines[2].equals("")) {
-										event.setLine(2, ChatColor.DARK_RED + "Invalid shop");
-										return;
+										if (Shops.getShop(lines[2]) == null) {
+											signb.setLine(2, ChatColor.DARK_RED + "Invalid shop");
+											return;
+										}
 									}
 								}
-							}
-							String loc = locationToString(event.getBlock().getLocation());
-							String send = loc;
-							List<String> signs = signsc.getStringList("signs");
-							for (String sign : signs) {
-								String[] e = sign.split("(%£%)");
-								if (e[0].equals(loc)) {
-									signs.remove(sign);
+								String loc = locationToString(event.getBlock().getLocation());
+								String send = loc;
+								List<String> signs = signsc.getStringList("signs");
+								for (String sign : signs) {
+									String[] e = sign.split("(%£%)");
+									if (e[0].equals(loc)) {
+										signs.remove(sign);
+									}
 								}
-							}
-							signs.add(send);
-							signsc.set("signs", signs);
-							saveConfig();
-						} else if (ChatColor.stripColor(lines[1]).equalsIgnoreCase("Sell")) {
-							String loc = locationToString(event.getBlock().getLocation());
-							String send = loc;
-							List<String> signs = signsc.getStringList("signs");
-							for (String sign : signs) {
-								String[] e = sign.split("(%£%)");
-								if (e[0].equals(loc)) {
-									signs.remove(sign);
+								signs.add(send);
+								signsc.set("signs", signs);
+								saveConfig();
+							} else if (ChatColor.stripColor(lines[1]).equalsIgnoreCase("Sell")) {
+								String loc = locationToString(event.getBlock().getLocation());
+								String send = loc;
+								List<String> signs = signsc.getStringList("signs");
+								for (String sign : signs) {
+									String[] e = sign.split("(%£%)");
+									if (e[0].equals(loc)) {
+										signs.remove(sign);
+									}
 								}
+								signs.add(send);
+								signsc.set("signs", signs);
+								saveConfig();
+								signb.setLine(2, "");
+								event.getPlayer().sendMessage(ChatColor.GREEN + "Added Custom shop sign!");
+							} else {
+								signb.setLine(1, ChatColor.DARK_RED + "Error: Buy | Sell");
 							}
-							signs.add(send);
-							signsc.set("signs", signs);
-							saveConfig();
-							event.getPlayer().sendMessage(ChatColor.GREEN + "Added Custom shop sign!");
-						} else {
-							event.setLine(1, ChatColor.DARK_RED + "Error: Buy | Sell");
+							signb.update();
+						}
+					} catch (Throwable e) {
+						e.printStackTrace();
+						if (isCustomShop) {
+							sendError(plr);
 						}
 					}
 				}
 			}
-		}, 10L);
+		}, 20L);
+	}
+
+	public static void sendError(Player plr) {
+		plr.sendMessage(ChatColor.RED + "Proper sign usage:");
+		plr.sendMessage(ChatColor.GRAY + "[CustomShop]");
+		plr.sendMessage(ChatColor.GRAY + " <Buy|Sell>");
+		plr.sendMessage(ChatColor.GRAY + "   [Shop]");
 	}
 
 	@EventHandler

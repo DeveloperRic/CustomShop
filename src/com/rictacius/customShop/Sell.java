@@ -26,6 +26,9 @@ public class Sell implements CommandExecutor, Listener {
 	public ArrayList<Double> checkShops(Inventory inv, Player p, ItemStack i, int id, int iddata, int slot) {
 		ArrayList<Double> send = new ArrayList<Double>();
 		for (String shop : plugin.getShopsConfig().getConfigurationSection("shops").getKeys(false)) {
+			if (!PermCheck.hasAccessPerm(p, plugin.getShopsConfig().getString("shops." + shop + ".permission"))) {
+				continue;
+			}
 			for (String item : plugin.getShopsConfig().getConfigurationSection("shops." + shop + ".items")
 					.getKeys(false)) {
 				String[] data = plugin.getShopsConfig().getString("shops." + shop + ".items." + item).split(",");
@@ -50,10 +53,21 @@ public class Sell implements CommandExecutor, Listener {
 		return send;
 	}
 
+	private int getSize(Inventory inv) {
+		int size = 0;
+		for (int i = 0; i < inv.getSize(); i++) {
+			if (inv.getItem(i) != null) {
+				size++;
+			}
+		}
+		return size;
+	}
+
 	@SuppressWarnings("deprecation")
 	@EventHandler
 	public void onExit(InventoryCloseEvent event) {
 		Inventory inv = event.getInventory();
+		Inventory backup = inv;
 		Inventory errorInv = inv;
 		if (inv == null)
 			return;
@@ -64,8 +78,8 @@ public class Sell implements CommandExecutor, Listener {
 		Player p = (Player) event.getPlayer();
 		int size = 0;
 		int sold = 0;
-		int items = 0;
-		double sent = 0;
+		int itemsSold = 0;
+		int moneySent = 0;
 		for (int n = 0; n < inv.getSize(); n++) {
 			ItemStack i = inv.getItem(n);
 			if (i == null) {
@@ -76,24 +90,36 @@ public class Sell implements CommandExecutor, Listener {
 			int iddata = i.getDurability();
 			ArrayList<Double> toAdd = checkShops(inv, p, i, id, iddata, n);
 			if (toAdd.size() == 2) {
-				plugin.economy.depositPlayer(p, toAdd.get(0));
-				sent += toAdd.get(0);
-				items += toAdd.get(1);
+				Main.economy.depositPlayer(p, toAdd.get(0));
+				moneySent += toAdd.get(0);
+				itemsSold += toAdd.get(1);
+				errorInv.setItem(n, null);
 				sold++;
 			}
 		}
 		if (sold < size) {
-			p.sendMessage(new TextComponent(ChatColor.RED + "Some items were not sold").getText());
-			for (int n = 0; n < errorInv.getSize(); n++) {
-				ItemStack i = errorInv.getItem(n);
-				if (i == null) {
-					return;
+			p.spigot().sendMessage(new TextComponent(ChatColor.RED + "Some items were not sold"));
+			if (size < getSize(backup)) {
+				p.sendMessage(ChatColor.DARK_RED + "A Fatal error occured! Please report this! Restoring items...");
+				for (int n = 0; n < backup.getSize(); n++) {
+					ItemStack i = backup.getItem(n);
+					if (i == null) {
+						continue;
+					}
+					p.getInventory().addItem(i);
 				}
-				p.getInventory().addItem(i);
+			} else {
+				for (int n = 0; n < errorInv.getSize(); n++) {
+					ItemStack i = errorInv.getItem(n);
+					if (i == null) {
+						continue;
+					}
+					p.getInventory().addItem(i);
+				}
 			}
 		} else {
-			p.sendMessage(new TextComponent(ChatColor.GREEN + "" + items + " items sold for " + plugin.getConfig().getString("currency")
-					+ sent).getText());
+			p.spigot().sendMessage(new TextComponent(ChatColor.GREEN + "" + itemsSold + " items sold for "
+					+ plugin.getConfig().getString("currency") + moneySent));
 		}
 	}
 
