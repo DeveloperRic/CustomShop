@@ -118,7 +118,6 @@ public class NBTReflectionUtil {
     public static String getString(ItemStack item, String key) {
         Object nmsitem = getNMSItemStack(item);
         if (nmsitem == null) {
-            System.out.println("Got null! (Outdated Plugin?)");
             return null;
         }
         Object nbttag = getNBTTagCompound(nmsitem);

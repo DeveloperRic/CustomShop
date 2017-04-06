@@ -7,6 +7,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
+import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -24,6 +25,7 @@ import org.bukkit.event.block.BlockDamageEvent;
 import org.bukkit.event.block.SignChangeEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerPickupItemEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
@@ -33,21 +35,22 @@ import de.tr7zw.itemnbtapi.NBTItem;
 import net.md_5.bungee.api.ChatColor;
 
 public class ChestShops implements Listener {
-	public static List<ChestShop> shops = new ArrayList<ChestShop>();
+	private static List<ChestShop> shops = new ArrayList<ChestShop>();
 	private static File shopsF;
 	private static FileConfiguration shopsc;
 
-	public static class ChestShop implements Listener {
-		public Location location;
-		public Location blockloc;
-		public ItemStack item;
-		public double price;
-		public boolean isBuy;
-		public UUID id;
-		public Item i;
+	private static class ChestShop implements Listener {
+		Location location;
+		Location blockloc;
+		ItemStack item;
+		double price;
+		boolean isBuy;
+		UUID id;
+		Item i;
 		private int task;
+		int stock;
 
-		public ChestShop(Location location, Location blockloc, ItemStack item, double price, boolean isBuy, UUID id) {
+		ChestShop(Location location, Location blockloc, ItemStack item, double price, boolean isBuy, UUID id) {
 			if (id == null) {
 				id = UUID.randomUUID();
 				boolean unique = false;
@@ -75,7 +78,7 @@ public class ChestShops implements Listener {
 			reset();
 		}
 
-		public void reset() {
+		void reset() {
 			cancelUpdate();
 			if (!blockloc.getBlock().getType().equals(Material.CHEST))
 				blockloc.getBlock().setType(Material.CHEST);
@@ -89,13 +92,15 @@ public class ChestShops implements Listener {
 			update();
 		}
 
-		public void cancelUpdate() {
-			i.remove();
-			i = null;
+		void cancelUpdate() {
+			if (i != null) {
+				i.remove();
+				i = null;
+			}
 			Bukkit.getScheduler().cancelTask(task);
 		}
 
-		public void update() {
+		void update() {
 			cancelUpdate();
 			task = Bukkit.getScheduler().scheduleSyncRepeatingTask(Main.pl, new Runnable() {
 				@Override
@@ -203,7 +208,10 @@ public class ChestShops implements Listener {
 		ItemStack temp = new ItemStack(Material.STAINED_GLASS_PANE, 1, (short) 5);
 		ItemMeta im = temp.getItemMeta();
 		im.setDisplayName(ChatColor.GREEN + "Continue " + (shop.isBuy ? " purchase" : "sale"));
-		im.setLore(Arrays.asList(ChatColor.RED + "" + ChatColor.BOLD + "This action cannot be undone!"));
+		im.setLore(Arrays.asList(ChatColor.GOLD + (shop.isBuy ? "Buy" : "Sell") + " x" + shop.item.getAmount()
+				+ " (" + shop.item.getType().toString().replaceAll("_", " ") + " : " + shop.item.getDurability()
+				+ ") for " + Main.cur + shop.price
+				, ChatColor.RED + "" + ChatColor.BOLD + "This action cannot be undone!"));
 		temp.setItemMeta(im);
 		NBTItem nbt = new NBTItem(temp);
 		nbt.setString("confirm-yes", shop.id.toString());
@@ -229,12 +237,15 @@ public class ChestShops implements Listener {
 		if (item.getType().equals(Material.AIR))
 			return;
 		if (ValidItem.invNameIs(inv, ChatColor.GOLD + "Confirm ChestShop Action")) {
+            e.setCancelled(true);
 			NBTItem nbt = new NBTItem(item);
 			Player plr = (Player) e.getWhoClicked();
 			if (!nbt.getString("confirm-yes").equals("")) {
 				String s = nbt.getString("confirm-yes");
 				ChestShop shop = getShop(UUID.fromString(s));
 				completeTransaction(shop, plr);
+			} else if (inv.getItem(0).equals(item)) {
+				plr.closeInventory();
 			}
 		}
 	}
@@ -297,14 +308,12 @@ public class ChestShops implements Listener {
 				plr.sendMessage(ChatColor.RED + "The sign must be placed infront of a chest!");
 				return;
 			}
-			plr.sendMessage(locationToString(e.getBlock().getLocation()));
-			plr.sendMessage(locationToString(blockloc));
 			createShop(e.getBlock().getLocation(), blockloc, item, price, isBuy, null);
 			plr.sendMessage(ChatColor.translateAlternateColorCodes('&',
 					"&aChestShop created! Your shop " + (isBuy ? "sells " : "buys ") + "&cx" + item.getAmount() + " "
 							+ item.getType().toString() + ":" + item.getDurability() + " &a for &6" + Main.cur
 							+ price));
-			plr.sendMessage(ChatColor.RED + "Remeber your shops's transactions do not affect your balance!");
+			plr.sendMessage(ChatColor.RED + "Remember, you do not get any money from your ChestShops!");
 		}
 	}
 
@@ -387,7 +396,7 @@ public class ChestShops implements Listener {
 	}
 
 	@SuppressWarnings("deprecation")
-	public static void loadShops() {
+	static void loadShops() {
 		shutdownShops();
 		shops.clear();
 		loadConfig();

@@ -12,6 +12,7 @@ import org.bukkit.ChatColor;
 
 public class Updater {
 	public static String newVersion;
+	public static boolean devBuild;
 
 	public Updater() {
 	}
@@ -37,21 +38,23 @@ public class Updater {
 							return true;
 						}
 					} else {
-						String[] parts = version.split(".");
-						String[] curparts = Main.pl.getDescription().getVersion().split(".");
-						if (parts.length != curparts.length) {
+						String[] newVersionParts = version.split(".");
+						String[] currentVersionParts = Main.pl.getDescription().getVersion().split(".");
+						if (newVersionParts.length != currentVersionParts.length) {
 							newVersion = version;
 							return true;
 						} else {
-							for (int i = 0; i < parts.length; i++) {
-								int a = Integer.parseInt(parts[i]);
-								int b = Integer.parseInt(curparts[i]);
+							for (int i = 0; i < newVersionParts.length; i++) {
+								int a = Integer.parseInt(newVersionParts[i]);
+								int b = Integer.parseInt(currentVersionParts[i]);
 								if (a >= b) {
+									devBuild = false;
 									if (a > b) {
 										newVersion = version;
 										return true;
 									}
 								} else {
+									devBuild = true;
 									break;
 								}
 							}
