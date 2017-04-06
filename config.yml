@@ -1,5 +1,0 @@
-currency: '$'
-shop-perm: customshop.use
-admin-perm: customshop.admin
-chestshop-perm: customshop.chestshop
-auto-update: true
