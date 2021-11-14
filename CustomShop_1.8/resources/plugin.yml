@@ -1,0 +1,10 @@
+main: com.rictacius.customShop.Main
+version: 2.0.2
+name: CustomShop
+depend: [Vault]
+
+commands:
+  shop:
+    description: Main plugin command
+  sell:
+      description: Opens an inventory to sell items
